@@ -1,5 +1,6 @@
 import logging
 import os
+import asyncio
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, Filters
 from database import init_db
@@ -16,8 +17,8 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN")
 SUPER_ADMIN_ID = int(os.environ.get("SUPER_ADMIN_ID", 0))
 
 def main():
-    # DB ni ishga tushirish
-    init_db()  # E’tibor: eski PTB da async bo‘lmasa shunday chaqiramiz
+    # Async DB ni ishga tushirish (Render va eski PTB uchun)
+    asyncio.run(init_db())  # init_db() async bo‘lsa shunday chaqiramiz
 
     # Updater yaratish
     updater = Updater(token=BOT_TOKEN, use_context=True)
