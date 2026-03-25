@@ -1,39 +1,56 @@
 import logging
 import os
 import asyncio
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackQueryHandler, Filters
-from database import init_db
-from handlers import start_handler, button_handler, message_handler, admin_check
 
+from telegram import Update
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters
+)
+
+# LOG
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
+
 logger = logging.getLogger(__name__)
 
-# Environment Variables
+# ENV
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-SUPER_ADMIN_ID = int(os.environ.get("SUPER_ADMIN_ID", 0))
+WEBHOOK_HOST = os.environ.get("WEBHOOK_HOST")
+PORT = int(os.environ.get("PORT", 10000))
 
-def main():
-    # Async DB ni ishga tushirish (Render va eski PTB uchun)
-    asyncio.run(init_db())  # init_db() async bo‘lsa shunday chaqiramiz
 
-    # Updater yaratish
-    updater = Updater(token=BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
+# START
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Salom! Bot ishlayapti 🚀")
 
-    # Handlerlar qo‘shish
-    dp.add_handler(CommandHandler("start", start_handler))
-    dp.add_handler(CallbackQueryHandler(button_handler))
-    dp.add_handler(MessageHandler(Filters.all & ~Filters.command, message_handler))
+
+# MESSAGE
+async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(update.message.text)
+
+
+# MAIN
+async def main():
+    app = Application.builder().token(BOT_TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     logger.info("Bot ishga tushdi...")
 
-    # Polling orqali ishga tushirish
-    updater.start_polling()
-    updater.idle()  # Botni ishlashda ushlab turadi
+    await app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        webhook_url=f"{WEBHOOK_HOST}/{BOT_TOKEN}",
+        drop_pending_updates=True
+    )
+
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
