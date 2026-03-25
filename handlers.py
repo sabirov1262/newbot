@@ -27,7 +27,7 @@ async def check_subscription(bot, user_id: int, channels: list) -> list:
     for ch in channels:
         ch_type = ch['channel_type']
         if ch_type == 'link':
-            continue  # Link tipidagi kanallarni tekshirib bo'lmaydi
+            continue
         try:
             channel_id = ch['channel_id']
             member = await bot.get_chat_member(channel_id, user_id)
@@ -43,7 +43,6 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await add_user(user.id, user.username or "", user.full_name or "")
     clear_state(user.id)
 
-    # Deep link tekshirish (kino kodi)
     args = context.args
     if args:
         code = args[0]
@@ -63,7 +62,6 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def send_movie(update: Update, context: ContextTypes.DEFAULT_TYPE, code: str):
     user = update.effective_user
 
-    # Obuna tekshirish
     sub_required = await get_setting('subscription_required')
     if sub_required == '1':
         channels = await get_channels()
@@ -112,11 +110,9 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     text = update.message.text or ""
 
-    # State tekshirish
     state_info = get_state(user.id)
     state = state_info["state"]
 
-    # Admin tugmalari
     is_adm = await admin_check(user.id)
 
     if text == "📊 Statistika" and is_adm:
@@ -145,7 +141,6 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # State bo'yicha routing
     if state == st.WAITING_MOVIE_FILE:
         await mv_h.handle_movie_file(update, context)
         return
@@ -204,7 +199,6 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await adm.handle_give_premium_days(update, context)
         return
 
-    # Kino kodi qidiruvi (faqat raqam yoki qisqa kod)
     if text and not text.startswith('/'):
         await send_movie(update, context, text.strip())
 
@@ -229,7 +223,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("✅ Rahmat! Endi kino kodini yuboring.")
         return
 
-    # Admin panel
     if not is_adm:
         await query.answer("❌ Ruxsat yo'q!", show_alert=True)
         return
