@@ -1,57 +1,57 @@
 import logging
 import os
+import asyncio
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-from telegram import Update
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters
-)
+# ========== TOKEN ==========
+TOKEN = os.environ.get("TOKEN")
+if not TOKEN:
+    raise ValueError("TOKEN environment variable not set")
 
-# LOG
+# ========== LOGGING ==========
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# ENV
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
-WEBHOOK_HOST = os.environ.get("WEBHOOK_HOST")  # https://newbot-fwh4.onrender.com
-PORT = int(os.environ.get("PORT", 10000))
+# ========== HANDLERS (o'zingizdagi handlerlarni qo'shing) ==========
+# async def start(update, context):
+#     await update.message.reply_text("Salom! Bot ishga tushdi.")
+# 
+# async def echo(update, context):
+#     await update.message.reply_text(update.message.text)
 
-
-# START HANDLER
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Salom! Bot ishlayapti 🚀")
-
-
-# MESSAGE HANDLER
-async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(update.message.text)
-
-
-# MAIN
-def main():
-    # Application yaratish
-    app = Application.builder().token(BOT_TOKEN).build()
-
-    # Handlerlar qo‘shish
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-
-    logger.info("Bot ishga tushdi...")
-
-    # Webhook orqali ishga tushurish
-    app.run_webhook(
+async def main():
+    """Botni webhook orqali ishga tushirish."""
+    app = Application.builder().token(TOKEN).build()
+    
+    # Handlerlarni qo'shing (quyidagi qatorlarni oching yoki o'zingiznikini yozing)
+    # app.add_handler(CommandHandler("start", start))
+    # app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+    
+    # Render muhitidan port va URL olish
+    port = int(os.environ.get("PORT", 8443))
+    webhook_url = os.environ.get("RENDER_EXTERNAL_URL")
+    
+    if not webhook_url:
+        logger.error("RENDER_EXTERNAL_URL environment variable not set")
+        return
+    
+    logger.info(f"Starting webhook on port {port} with URL {webhook_url}/{TOKEN}")
+    
+    # Webhookni ishga tushirish
+    await app.bot.set_webhook(url=f"{webhook_url}/{TOKEN}")
+    
+    # Webhook serverini ishga tushirish
+    await app.run_webhook(
         listen="0.0.0.0",
-        port=PORT,
-        webhook_url=f"{WEBHOOK_HOST}/{BOT_TOKEN}",
-        drop_pending_updates=True
+        port=port,
+        url_path=TOKEN,
+        webhook_url=f"{webhook_url}/{TOKEN}",
+        drop_pending_updates=True,
     )
 
-
 if __name__ == "__main__":
-    main()
+    # Muhim: asyncio.run() ni faqat shu yerda ishlating
+    asyncio.run(main())
