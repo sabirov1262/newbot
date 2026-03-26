@@ -33,7 +33,7 @@ async def init_db():
             )
         """)
         
-        # Kinolar jadvali - Telegram serverida saqlanadi (file_id ishlatiladi)
+        # Kinolar jadvali
         await db.execute("""
             CREATE TABLE IF NOT EXISTS movies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,7 +112,6 @@ async def init_db():
         
         await db.commit()
     print("✅ Database tayyor!")
-
 
 # ==================== USER FUNCTIONS ====================
 
@@ -193,7 +192,6 @@ async def is_premium_user(user_id: int):
         ) as cur:
             return await cur.fetchone() is not None
 
-
 # ==================== ADMIN FUNCTIONS ====================
 
 async def is_admin(user_id: int):
@@ -224,7 +222,6 @@ async def get_admins():
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM admins") as cur:
             return await cur.fetchall()
-
 
 # ==================== MOVIE FUNCTIONS ====================
 
@@ -283,7 +280,6 @@ async def update_movie(code: str, field: str, value: str):
         await db.execute(f"UPDATE movies SET {field}=? WHERE code=?", (value, code))
         await db.commit()
 
-
 # ==================== CHANNEL FUNCTIONS ====================
 
 async def add_channel(channel_id: str, name: str, link: str, ch_type: str = 'public'):
@@ -307,7 +303,6 @@ async def delete_channel(channel_id: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE channels SET is_active=0 WHERE channel_id=?", (channel_id,))
         await db.commit()
-
 
 # ==================== TARIFF FUNCTIONS ====================
 
@@ -343,7 +338,6 @@ async def delete_tariff(tariff_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE tariffs SET is_active=0 WHERE id=?", (tariff_id,))
         await db.commit()
-
 
 # ==================== SETTINGS FUNCTIONS ====================
 
