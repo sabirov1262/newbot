@@ -1,16 +1,22 @@
 import os
 
-# Bot token - .env yoki to'g'ridan-to'g'ri kiriting
-BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+# Bot token
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise ValueError("BOT_TOKEN environment variable not set")
 
-# Super admin ID (asosiy admin)
-SUPER_ADMIN_ID = int(os.getenv("SUPER_ADMIN_ID", "123456789"))
+# Webhook sozlamalari
+WEBHOOK_HOST = os.environ.get("WEBHOOK_HOST")
+if not WEBHOOK_HOST:
+    raise ValueError("WEBHOOK_HOST environment variable not set")
 
-# Kanal linki (majburiy obuna uchun default)
-# Qo'shimcha kanallar database orqali boshqariladi
+PORT = int(os.environ.get("PORT", 8080))
 
-# Fayl saqlash usuli: "telegram" (server yo'q, Telegram serverida saqlanadi)
+# Super admin ID
+SUPER_ADMIN_ID = int(os.environ.get("SUPER_ADMIN_ID", 0))
+
+# Fayl saqlash usuli
 STORAGE_TYPE = "telegram"
 
 # Bot nomi
-BOT_NAME = "Kinolar"
+BOT_NAME = "Kinobot"
