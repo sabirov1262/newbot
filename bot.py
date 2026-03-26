@@ -1,11 +1,12 @@
 import os
-import asyncio
 import logging
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
+from telegram.error import TelegramError
 
 from database import init_db
 from handlers import start_handler, message_handler, button_handler
+from config import BOT_TOKEN, WEBHOOK_HOST, PORT
 
 # LOG
 logging.basicConfig(
@@ -14,36 +15,59 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ENV
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
-WEBHOOK_HOST = os.environ.get("WEBHOOK_HOST")
-PORT = int(os.environ.get("PORT", 10000))
+# Global application object
+app = None
 
-if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN environment variable not set")
-if not WEBHOOK_HOST:
-    raise ValueError("WEBHOOK_HOST environment variable not set")
-
-# MAIN
-async def main():
-    await init_db()  # Database tayyorlash
-
+async def setup_application():
+    """Application ni sozlash"""
+    global app
     app = Application.builder().token(BOT_TOKEN).build()
-
+    
     # Handlerlar
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, message_handler))
     app.add_handler(CallbackQueryHandler(button_handler))
+    
+    return app
 
+async def main():
+    """Asosiy funksiya"""
+    global app
+    
+    # Database init
+    await init_db()
+    logger.info("✅ Database tayyor!")
+    
+    # Application setup
+    app = await setup_application()
+    
     logger.info("Bot ishga tushdi...")
-
-    # Webhook orqali ishga tushirish
-    await app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        webhook_url=f"{WEBHOOK_HOST}/{BOT_TOKEN}",
-        drop_pending_updates=True
-    )
+    
+    try:
+        # Webhook orqali ishga tushirish
+        await app.initialize()
+        await app.updater.start_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            url_path=BOT_TOKEN,
+            webhook_url=f"{WEBHOOK_HOST}/{BOT_TOKEN}",
+            drop_pending_updates=True
+        )
+        
+        # Botni ishga tushirish
+        logger.info(f"Bot webhook orqali ishga tushdi: {WEBHOOK_HOST}/{BOT_TOKEN}")
+        
+        # Keep the bot running
+        await asyncio.Event().wait()
+        
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("Bot to'xtatildi")
+    except Exception as e:
+        logger.error(f"Xatolik: {e}")
+    finally:
+        if app:
+            await app.shutdown()
 
 if __name__ == "__main__":
+    import asyncio
     asyncio.run(main())
